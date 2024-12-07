@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Minify your JavaScript code easily with our free online JavaScript Minifier. Just paste your code or upload a file and get the minified version instantly.">
+  <meta name="keywords" content="JavaScript, Minifier, Minify Code, Online Tool, JavaScript Optimization, Code Compression">
+  <meta name="author" content="Irixor Technologies">
+  
+  <!-- Open Graph Meta Tags -->
+  <meta property="og:title" content="JavaScript Minifier - Minify Your Code Online">
+  <meta property="og:description" content="Minify your JavaScript code easily with our free online JavaScript Minifier. Just paste your code or upload a file and get the minified version instantly.">
+  <meta property="og:image" content="./assets/images/og.png"> <!-- Add an image for social sharing -->
+  <meta property="og:type" content="website">
+  <title>JavaScript Minifier</title>
+  <link rel="icon" href="./assets/images/favicon.webp">
+  <!-- Bootstrap CSS -->
+  <link href="./assets/css/bootstrap.min.css" rel="stylesheet">
+
+  <!-- Bootstrap Icons -->
+  <link href="./assets/css/bootstrap-icons.min.css" rel="stylesheet">
+
+  <!-- PrismJS CSS -->
+  <link href="./assets/css/prism.min.css" rel="stylesheet">
+
+  <!-- Google Font (Fira Code) -->
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <!-- Terser -->
+  <script src="./assets/js/bundle.min.js"></script>
+
+  <!-- PrismJS JS -->
+  <script src="./assets/js/prism.min.js"></script>
+
+  <style>
+    body {
+      padding-top: 30px;
+    }
+
+    .output-container,
+    .copy-button-container,
+    .download-button-container {
+      margin-top: 20px;
+      visibility: hidden; /* Hide both the container and the content initially */
+    }
+
+    .textarea-container {
+      margin-bottom: 20px;
+    }
+
+    /* Change font for PrismJS code */
+    .language-javascript {
+      font-family: 'Fira Code', monospace !important;
+    }
+
+    pre {
+      font-family: 'Fira Code', monospace !important;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+    <h1 class="text-center mb-4"><i class="bi bi-filetype-js"></i> JavaScript Minifier</h1>
+
+    <!-- File Upload Area -->
+    <div class="d-flex justify-content-center mb-3">
+      <input type="file" id="fileInput" class="form-control" accept=".js">
+    </div>
+
+    <!-- Input Area (Initially hidden) -->
+    <div class="textarea-container">
+      <textarea id="inputCode" class="form-control" rows="10" placeholder="Paste your JavaScript code here..."></textarea>
+    </div>
+
+    <!-- Minify Button -->
+    <div class="d-flex justify-content-center">
+      <button id="minifyButton" class="btn btn-primary">
+      <i class="bi bi-file-earmark-zip"></i> Minify Code
+      </button>
+    </div>
+
+    <!-- Output Area (Initially hidden) -->
+    <div class="output-container">
+      <h3>Minified Code:</h3>
+      <pre><code id="outputCode" class="language-javascript"></code></pre>
+    </div>
+
+    <!-- Copy Button (Initially hidden) -->
+    <div class="copy-button-container d-flex justify-content-center">
+      <button id="copyButton" class="btn btn-secondary">
+        <i class="bi bi-clipboard"></i> Copy to Clipboard
+      </button>
+    </div>
+
+    <!-- Download Button (Initially hidden) -->
+    <div class="download-button-container d-flex justify-content-center">
+      <button id="downloadButton" class="btn btn-success ms-2">
+        <i class="bi bi-download"></i> Download File
+      </button>
+    </div>
+  </div>
+
+  <script>
+    // Handle file upload
+    document.getElementById('fileInput').addEventListener('change', function (event) {
+      const file = event.target.files[0];
+      if (file) {
+        const fileType = file.type;
+        const fileExtension = file.name.split('.').pop().toLowerCase();
+
+        // Check if the file is a valid JavaScript file (either by MIME type or file extension)
+        if (fileType === 'application/javascript' || fileType === 'text/javascript' || fileExtension === 'js') {
+          const reader = new FileReader();
+          reader.onload = function (e) {
+            const fileContent = e.target.result;
+            document.getElementById('inputCode').value = fileContent;  // Set the file content in the textarea
+          };
+          reader.readAsText(file);
+        } else {
+          alert('Please upload a valid JavaScript file (with .js extension).');
+        }
+      }
+    });
+
+    // Minify JavaScript code
+    document.getElementById('minifyButton').onclick = function () {
+      const inputCode = document.getElementById('inputCode').value;
+
+      Terser.minify(inputCode)
+        .then(result => {
+          const minifiedCode = result.code;
+          const outputCode = document.getElementById('outputCode');
+          outputCode.textContent = minifiedCode;
+
+          // Reapply PrismJS syntax highlighting
+          Prism.highlightElement(outputCode);
+
+          // Generate file name based on hash
+          const hash = generateHash(minifiedCode);
+          const fileName = `index-${hash}.min.js`;
+
+          // Reveal the output area, copy button, and download button after minification
+          document.querySelector('.output-container').style.visibility = 'visible';
+          document.querySelector('.copy-button-container').style.visibility = 'visible';
+          document.querySelector('.download-button-container').style.visibility = 'visible';
+
+          // Enable download button
+          document.getElementById('downloadButton').onclick = function () {
+            const blob = new Blob([minifiedCode], { type: 'application/javascript' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = fileName;
+            link.click();
+          };
+
+          // Enable copy button
+          document.getElementById('copyButton').onclick = function () {
+            navigator.clipboard.writeText(minifiedCode)
+              .then(() => {
+                alert('Code copied to clipboard!');
+              })
+              .catch(err => {
+                alert('Failed to copy code: ' + err);
+              });
+          };
+        })
+        .catch(error => {
+          alert('Error minifying the code: ' + error);
+        });
+    };
+
+    // Function to generate the first 4 characters of the hash of the minified code
+    function generateHash(str) {
+      let hash = 0;
+      for (let i = 0; i < str.length; i++) {
+        const char = str.charCodeAt(i);
+        hash = (hash << 5) - hash + char;
+      }
+      return hash.toString(16).slice(0, 4);
+    }
+  </script>
+
+  <!-- Bootstrap JS -->
+  <script src="./assets/js/bootstrap.bundle.min.js"></script>
+</body>
+
+</html>
